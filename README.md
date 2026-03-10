@@ -1,19 +1,20 @@
 # 🔐 GitHub Organization Access Report
 
-A Spring Boot service that connects to the GitHub API and generates a structured access report showing **which users have access to which repositories** within a GitHub organization.
+A Spring Boot service that connects to the GitHub API and generates a structured report showing which users have access to which repositories within a GitHub organization.
+
+This service authenticates with GitHub, retrieves repository and collaboration data, and exposes an API endpoint that returns a user → repository access mapping.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [How to Run](#how-to-run)
-- [Authentication](#authentication)
-- [API Endpoints](#api-endpoints)
-- [Sample Responses](#sample-responses)
-- [Design Decisions & Assumptions](#design-decisions--assumptions)
+[![Overview](https://img.shields.io/badge/Overview-blue)](#overview)
+[![Tech Stack](https://img.shields.io/badge/Tech%20Stack-blue)](#tech-stack)
+[![Project Structure](https://img.shields.io/badge/Project%20Structure-blue)](#project-structure)
+[![How to Run with Authentication](https://img.shields.io/badge/How%20to%20Run-blue)](#how-to-run-with-authentication)
+[![API Endpoints](https://img.shields.io/badge/API%20Endpoints-blue)](#api-endpoints)
+[![Sample Responses](https://img.shields.io/badge/Sample%20Responses-blue)](#sample-responses)
+[![Design Decisions & Assumptions](https://img.shields.io/badge/Design%20Decisions%20%26%20Assumptions-blue)](#design-decisions--assumptions)
 
 ---
 
@@ -32,8 +33,8 @@ This service:
 
 | Layer | Technology |
 |---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3 |
+| Language | Java 21 |
+| Framework | Spring Boot 4.0.3 |
 | HTTP Client | Spring WebFlux (WebClient) |
 | Concurrency | Project Reactor (Flux/Mono) |
 | Caching | Spring Cache |
@@ -69,56 +70,43 @@ src/main/java/com/ai/cloudEagle/githubreport/
 
 ---
 
-## How to Run
+## How to Run with Authentication
 
 ### Prerequisites
 
-- Java 17+
+- Java 21
 - Maven 3.8+
+- Git
 - A GitHub **Personal Access Token** (see [Authentication](#authentication))
-
-### Steps
-
-**1. Clone the repository**
+  - The GitHub token is provided in the API request using the Authorization header (Bearer Token) and is not stored in the application configuration.
+---
+### Step 1- Clone the repository
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/github-access-report.git
 cd github-access-report
 ```
-
-**2. Configure your token** in `src/main/resources/application.properties`:
+---
+### Step 2: Build the Project
+**Run the following command to build the project:**
 
 ```properties
-github.token=ghp_YOUR_TOKEN_HERE
-github.api-url=https://api.github.com
-github.max-concurrent-requests=10
-
-spring.cache.type=simple
-```
-
-> ⚠️ Do **not** commit your real token. Use environment variables in production.
-
-**3. Build the project**
-
-```bash
 mvn clean install
 ```
-
-**4. Run the application**
-
+---
+### Step 3: Run the Application
+**Start the Spring Boot application using:**
 ```bash
 mvn spring-boot:run
 ```
-
-The server starts at: `http://localhost:8080`
-
+**The server will start at:**
+```
+http://localhost:8080
+```
 ---
-
-## Authentication
+### Step 4: Generate a GitHub Personal Access Token**
 
 This service uses **GitHub Personal Access Token (PAT)** authentication.
-
-### How to generate a token
 
 1. Go to [GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic)](https://github.com/settings/tokens)
 2. Click **Generate new token (classic)**
@@ -128,112 +116,91 @@ This service uses **GitHub Personal Access Token (PAT)** authentication.
    - `read:user` — Read user profile data
 4. Copy the generated token (starts with `ghp_`)
 
-### How to pass the token
+---
+### Step 5. Call the API Using Bearer Token
+**Open Postman and create a new GET request.**
 
-Send the token in the `Authorization` header as a **Bearer token** with every API request:
-
+Example endpoint:
 ```
-Authorization: Bearer ghp_YOUR_TOKEN_HERE
+http://localhost:8080/api/access-report/kanha-org
 ```
+### Configure Authorization in Postman
 
-#### Example using curl:
+1. Open the Authorization tab
+2. Set Auth Type to:
 
-```bash
-curl -H "Authorization: Bearer ghp_YOUR_TOKEN_HERE" \
-     http://localhost:8080/api/access-report/YOUR_ORG
-```
+Bearer Token
 
-#### Example using Postman:
+3. Paste your GitHub token into the Token field
+- Postman will automatically send the request header:
+- Authorization: Bearer <your_github_token>
 
-- Go to the **Headers** tab
-- Add: `Authorization` → `Bearer ghp_YOUR_TOKEN_HERE`
+4. Click Send
+- You will receive the GitHub organization access report in JSON format.
 
 ---
-
 ## API Endpoints
 
-### Base URL: `http://localhost:8080`
+Base URL: http://localhost:8080
 
-All endpoints (except `/api/health`) require:
+All endpoints (except /api/health) require authentication using a GitHub Personal Access Token.
 
-```
-Header: Authorization: Bearer <your_github_token>
-```
+Authorization: Bearer <your_github_token>
 
----
+--------------------------------------------------
 
-### 1. Full Access Report
-
-```
-GET /api/access-report/{org}
-```
+1. Full Access Report `GET /api/access-report/{org}`
 
 Returns the complete report — all users and all their repositories.
 
+Example:
 ```bash
-curl -H "Authorization: Bearer ghp_YOUR_TOKEN" \
-     http://localhost:8080/api/access-report/kanha-org
+curl -H "Authorization: Bearer ghp_YOUR_TOKEN" http://localhost:8080/api/access-report/kanha-org
 ```
 
----
+--------------------------------------------------
 
-### 2. Summary Only
-
-```
-GET /api/access-report/{org}/summary
-```
+2. Summary Only `GET /api/access-report/{org}/summary`
 
 Returns just the summary stats: total repos, users, collaborations, and generation time.
 
+Example:
 ```bash
-curl -H "Authorization: Bearer ghp_YOUR_TOKEN" \
-     http://localhost:8080/api/access-report/kanha-org/summary
+curl -H "Authorization: Bearer ghp_YOUR_TOKEN" http://localhost:8080/api/access-report/kanha-org/summary
 ```
 
----
+--------------------------------------------------
 
-### 3. All Users With Access
-
-```
-GET /api/access-report/{org}/users
-```
+3. All Users With Access `GET /api/access-report/{org}/users`
 
 Returns a list of all users and the repositories they can access.
 
+Example:
 ```bash
-curl -H "Authorization: Bearer ghp_YOUR_TOKEN" \
-     http://localhost:8080/api/access-report/kanha-org/users
+curl -H "Authorization: Bearer ghp_YOUR_TOKEN" http://localhost:8080/api/access-report/kanha-org/users
 ```
 
----
+--------------------------------------------------
 
-### 4. Single User Repository Access
-
-```
-GET /api/access-report/{org}/users/{username}
-```
+4. Single User Repository Access `GET /api/access-report/{org}/users/{username}`
 
 Returns repositories accessible by a specific user.
 
+Example:
 ```bash
-curl -H "Authorization: Bearer ghp_YOUR_TOKEN" \
-     http://localhost:8080/api/access-report/kanha-org/users/Prabhanjan-17p
+curl -H "Authorization: Bearer ghp_YOUR_TOKEN" http://localhost:8080/api/access-report/kanha-org/users/Prabhanjan-17p
 ```
 
----
+--------------------------------------------------
 
-### 5. Health Check
-
-```
-GET /api/health
-```
+5. Health Check `GET /api/health`
 
 No authentication required. Returns a simple status string.
 
+Example:
 ```bash
 curl http://localhost:8080/api/health
 ```
-
 ---
 
 ## Sample Responses
