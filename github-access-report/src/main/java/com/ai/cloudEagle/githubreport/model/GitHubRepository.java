@@ -1,0 +1,13 @@
+package com.ai.cloudEagle.githubreport.model;
+
+import lombok.Data;
+
+@Data
+public class GitHubRepository {
+
+    private String name;
+    private String full_name;
+    private String html_url;
+    private boolean privateRepo;
+
+}
